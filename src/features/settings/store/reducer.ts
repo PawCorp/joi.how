@@ -4,6 +4,7 @@ import {
   T_SET_MAX_PACE,
   T_OPEN_DIALOG,
   T_CLOSE_DIALOG,
+  T_SET_CREDENTIALS,
   T_SET_PORN_LIST,
   T_SET_DURATION,
   T_SET_EVENT_LIST,
@@ -15,7 +16,7 @@ import {
   T_SET_PLAYER_GENDER,
   T_SET_PLAYER_PARTS,
 } from './actions'
-import { PornList, EventToken, HypnoMode, PlayerParts, PlayerGender } from '../../gameboard/types'
+import { PornList, EventToken, HypnoMode, PlayerParts, PlayerGender, Credentials } from '../../gameboard/types'
 import { events } from '../../gameboard/events/index'
 
 export interface ISettingsState {
@@ -26,6 +27,7 @@ export interface ISettingsState {
   }
   steepness: number
   duration: number
+  credentials: Credentials | null
   pornList: PornList
   eventList: EventToken['id'][]
   hypnoMode: HypnoMode
@@ -48,6 +50,7 @@ export const SettingsDefaultState: ISettingsState = {
   },
   steepness: 0.05,
   duration: 6000,
+  credentials: null,
   pornList: [],
   eventList: events.map(event => event.id),
   hypnoMode: HypnoMode.JOI,
@@ -96,6 +99,11 @@ export function SettingsReducer(state: ISettingsState = SettingsDefaultState, ac
       return {
         ...state,
         duration: action.payload,
+      }
+    case T_SET_CREDENTIALS:
+      return {
+        ...state,
+        credentials: action.payload,
       }
     case T_SET_PORN_LIST:
       return {
