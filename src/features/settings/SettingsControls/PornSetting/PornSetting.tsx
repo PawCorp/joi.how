@@ -1,14 +1,16 @@
 import React from 'react'
 import '../settings.css'
 import './PornSetting.css'
-import { PornList } from '../../../gameboard/types'
+import { Credentials, PornList } from '../../../gameboard/types'
 import { E621Posts } from '../../types'
-import axios, { AxiosResponse } from 'axios'
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { PornThumbnail } from './PornThumbnail'
 import { debounce } from 'lodash'
 import reactGA from '../../../../analytics'
 
 interface IPornSettingProps {
+  credentials: Credentials | null
+  setCredentials: (newCredentials: Credentials | null) => void
   pornList: PornList
   setPornList: (newPornList: PornList) => void
 }
@@ -20,6 +22,9 @@ interface IPornSettingState {
   flags: {
     highRes: boolean
   }
+  credentials: Credentials
+  addCredentials: boolean
+  credentialsError: string | null
 }
 
 export class PornSetting extends React.Component<IPornSettingProps, IPornSettingState> {
@@ -33,8 +38,15 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
       flags: {
         highRes: false,
       },
+      credentials: this.props.credentials || { login: '', api_key: '' },
+      addCredentials: false,
+      credentialsError: null,
     }
     this.updateTags = this.updateTags.bind(this)
+    this.updateLogin = this.updateLogin.bind(this)
+    this.updateApiKey = this.updateApiKey.bind(this)
+    this.saveCredentials = this.saveCredentials.bind(this)
+    this.clearCredentials = this.clearCredentials.bind(this)
     this.downloadFromTags = this.downloadFromTags.bind(this)
     this.clear = this.clear.bind(this)
   }
@@ -43,6 +55,45 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
     this.setState({
       tags: event.target.value,
     })
+  }
+
+  updateLogin(event: React.ChangeEvent<HTMLInputElement>) {
+    const login = event.target.value
+    this.setState(prevState => ({
+      credentials: {
+        ...prevState.credentials!,
+        login,
+      },
+      credentialsError: null,
+    }))
+  }
+
+  updateApiKey(event: React.ChangeEvent<HTMLInputElement>) {
+    const api_key = event.target.value
+    this.setState(prevState => ({
+      credentials: {
+        ...prevState.credentials!,
+        api_key,
+      },
+      credentialsError: null,
+    }))
+  }
+
+  saveCredentials() {
+    // Check to see if these credentials are valid
+    const config: AxiosRequestConfig = {
+      params: this.state.credentials,
+      responseType: 'json',
+    }
+    axios
+      .get(`https://e621.net/users/${this.state.credentials.login}.json`, config)
+      .then(() => this.props.setCredentials(this.state.credentials))
+      .catch(() => this.setState({ credentialsError: 'Invalid credentials' }))
+  }
+
+  clearCredentials() {
+    this.props.setCredentials(null)
+    this.setState({ addCredentials: false })
   }
 
   downloadFromTags() {
@@ -54,11 +105,15 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
         label: this.state.tags,
       })
     }, 2000)()
+
+    const config: AxiosRequestConfig = { responseType: 'json' }
+    if (this.props.credentials != null) {
+      config.params = this.props.credentials
+    }
+
     const tags = encodeURIComponent(this.state.tags + (this.state.minScore !== null ? ` score:>=${this.state.minScore}` : ''))
     axios
-      .get(`https://e621.net/posts.json?tags=${tags}&limit=${this.state.count}&callback=callback`, {
-        responseType: 'json',
-      })
+      .get(`https://e621.net/posts.json?tags=${tags}&limit=${this.state.count}&callback=callback`, config)
       .then((response: AxiosResponse<{ posts: E621Posts }>) => {
         this.props.setPornList(
           (response.data.posts
@@ -92,6 +147,49 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
             <button onClick={this.downloadFromTags}>Import from e621</button>
           </div>
 
+          <div className="settings-innerrow">
+            {this.props.credentials ? (
+              <>
+                <label>
+                  <span>Use user credentials</span>
+                  <input type="checkbox" checked onChange={this.clearCredentials} />
+                </label>
+                <br />
+                <em>Logged in. You can use votedup:me &amp; private sets.</em>
+              </>
+            ) : (
+              <>
+                <label>
+                  <span>Use user credentials</span>
+                  <input
+                    type="checkbox"
+                    checked={this.state.addCredentials}
+                    onChange={e => this.setState({ addCredentials: e.target.checked })}
+                  />
+                </label>
+                <em>Login to use votedup:me &amp; private sets.</em>
+                {this.state.addCredentials ? (
+                  <>
+                    <label>
+                      <span>Username</span>
+                      <input type="text" value={this.state.credentials.login} onChange={this.updateLogin} />
+                    </label>
+                    <br />
+                    <br />
+                    <label>
+                      <span>Api Key</span>
+                      <input type="text" value={this.state.credentials.api_key} onChange={this.updateApiKey} />
+                    </label>
+                    <em>
+                      (found in <a href="https://e621.net/users/home">your account</a> under "Manage API Access")
+                    </em>
+                    <button onClick={this.saveCredentials}>Save credentials</button>
+                    {this.state.credentialsError != null ? <span className="PornSetting__error">{this.state.credentialsError}</span> : null}
+                  </>
+                ) : null}
+              </>
+            )}
+          </div>
           <div className="settings-innerrow">
             <label>
               <span>Score filtering</span>
