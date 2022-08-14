@@ -13,7 +13,7 @@ export type E621File = {
   url: string | null
 }
 
-export type E621Posts = {
+export type E621Post = {
   id: number
   created_at: string
   updated_at: string
@@ -34,7 +34,7 @@ export type E621Posts = {
   locked_tags: string[]
   change_seq: number
   flags: { pending: boolean; flagged: boolean; note_locked: boolean; status_locked: boolean; rating_locked: boolean; deleted: boolean }
-  rating: 's' | 'e'
+  rating: 's' | 'q' | 'e'
   fav_count: number
   sources: string[]
   pools: number[]
@@ -44,7 +44,7 @@ export type E621Posts = {
   description: string
   comment_count: number
   is_favorited: boolean
-}[]
+}
 
 export type E621User = {
   api_burst_limit: number

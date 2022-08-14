@@ -8,3 +8,8 @@
 .PornSetting__error {
   color: #cc0000;
 }
+
+.PornSetting__textarea {
+  width: 100%;
+  min-height: 6.25em;
+}

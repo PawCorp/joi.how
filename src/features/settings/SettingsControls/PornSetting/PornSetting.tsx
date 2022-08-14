@@ -2,11 +2,12 @@ import React from 'react'
 import '../settings.css'
 import './PornSetting.css'
 import { Credentials, PornList } from '../../../gameboard/types'
-import { E621Posts } from '../../types'
+import { E621Post, E621User } from '../../types'
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { PornThumbnail } from './PornThumbnail'
 import { debounce } from 'lodash'
 import reactGA from '../../../../analytics'
+import { Blacklist } from '../../../../helpers/blacklist'
 
 interface IPornSettingProps {
   credentials: Credentials | null
@@ -25,6 +26,7 @@ interface IPornSettingState {
   credentials: Credentials
   addCredentials: boolean
   credentialsError: string | null
+  blacklistTagsString: string | null
 }
 
 export class PornSetting extends React.Component<IPornSettingProps, IPornSettingState> {
@@ -38,17 +40,27 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
       flags: {
         highRes: false,
       },
-      credentials: this.props.credentials || { login: '', api_key: '' },
+      credentials: { login: '', api_key: '' },
       addCredentials: false,
       credentialsError: null,
+      blacklistTagsString: null,
     }
+
     this.updateTags = this.updateTags.bind(this)
     this.updateLogin = this.updateLogin.bind(this)
     this.updateApiKey = this.updateApiKey.bind(this)
     this.saveCredentials = this.saveCredentials.bind(this)
     this.clearCredentials = this.clearCredentials.bind(this)
+    this.loadBlacklist = this.loadBlacklist.bind(this)
     this.downloadFromTags = this.downloadFromTags.bind(this)
     this.clear = this.clear.bind(this)
+  }
+
+  componentDidUpdate(prevProps: IPornSettingProps) {
+    if (this.props.credentials !== null && prevProps.credentials === null) {
+      this.setState({ credentials: this.props.credentials })
+      this.loadBlacklist()
+    }
   }
 
   updateTags(event: React.ChangeEvent<HTMLInputElement>) {
@@ -96,6 +108,16 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
     this.setState({ addCredentials: false })
   }
 
+  loadBlacklist() {
+    const config: AxiosRequestConfig = {
+      params: this.props.credentials,
+      responseType: 'json',
+    }
+    axios.get(`https://e621.net/users/${this.props.credentials!.login}.json`, config).then((response: AxiosResponse<E621User>) => {
+      this.setState({ blacklistTagsString: response.data.blacklisted_tags })
+    })
+  }
+
   downloadFromTags() {
     debounce(() => {
       if (localStorage.getItem('allowCookies') !== 'true' || localStorage.getItem('allowCookies') !== null) return
@@ -111,13 +133,15 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
       config.params = this.props.credentials
     }
 
+    const blacklist = new Blacklist(this.state.blacklistTagsString || '')
     const tags = encodeURIComponent(this.state.tags + (this.state.minScore !== null ? ` score:>=${this.state.minScore}` : ''))
     axios
       .get(`https://e621.net/posts.json?tags=${tags}&limit=${this.state.count}&callback=callback`, config)
-      .then((response: AxiosResponse<{ posts: E621Posts }>) => {
+      .then((response: AxiosResponse<{ posts: E621Post[] }>) => {
         this.props.setPornList(
           (response.data.posts
             .filter(post => /(jpg|png|bmp|jpeg|webp|gif)$/g.test(post.file.ext))
+            .filter(blacklist.shouldKeepPost)
             .map(post => (this.state.flags.highRes ? post.file.url : post.sample.url))
             .filter(url => url !== null) as string[])
             .filter(url => this.props.pornList.indexOf(url) === -1)
@@ -155,7 +179,11 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
                   <input type="checkbox" checked onChange={this.clearCredentials} />
                 </label>
                 <br />
-                <em>Logged in. You can use votedup:me &amp; private sets.</em>
+                <em>
+                  Logged in.
+                  <br />
+                  You can now use votedup:me, private sets, &amp; your blacklist.
+                </em>
               </>
             ) : (
               <>
@@ -167,7 +195,7 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
                     onChange={e => this.setState({ addCredentials: e.target.checked })}
                   />
                 </label>
-                <em>Login to use votedup:me &amp; private sets.</em>
+                <em>Login to use votedup:me, private sets, &amp; your blacklist.</em>
                 {this.state.addCredentials ? (
                   <>
                     <label>
@@ -189,6 +217,34 @@ export class PornSetting extends React.Component<IPornSettingProps, IPornSetting
                 ) : null}
               </>
             )}
+          </div>
+          <div className="settings-innerrow">
+            <label>
+              <span>Use blacklist</span>
+              <input
+                type="checkbox"
+                checked={this.state.blacklistTagsString !== null}
+                onChange={e => this.setState({ blacklistTagsString: !e.target.checked ? null : '' })}
+              />
+            </label>
+            {this.state.blacklistTagsString !== null ? (
+              <>
+                <br />
+                <br />
+                <label>
+                  <span>Blacklisted tags</span>
+                  <textarea
+                    className="PornSetting__textarea"
+                    value={this.state.blacklistTagsString}
+                    onChange={e => this.setState({ blacklistTagsString: e.target.value })}></textarea>
+                  <em>
+                    Put any tag combinations you don't want to see. Each combination should go on a separate line. &nbsp;
+                    <a href="https://e621.net/help/blacklist">View help</a>.
+                  </em>
+                  {this.props.credentials ? <button onClick={this.loadBlacklist}>Reload user blacklist</button> : null}
+                </label>
+              </>
+            ) : null}
           </div>
           <div className="settings-innerrow">
             <label>
