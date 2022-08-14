@@ -1,4 +1,4 @@
-import { PornList, EventToken, HypnoMode, PlayerParts, PlayerGender } from '../../gameboard/types'
+import { PornList, EventToken, HypnoMode, PlayerParts, PlayerGender, Credentials } from '../../gameboard/types'
 
 export const T_OPEN_DIALOG = 'OPEN_DIALOG'
 export const T_CLOSE_DIALOG = 'CLOSE_DIALOG'
@@ -6,6 +6,7 @@ export const T_SET_MIN_PACE = 'SET_MIN_PACE'
 export const T_SET_MAX_PACE = 'SET_MAX_PACE'
 export const T_SET_STEEPNESS = 'SET_STEEPNESS'
 export const T_SET_DURATION = 'SET_DURATION'
+export const T_SET_CREDENTIALS = 'SET_CREDENTIALS'
 export const T_SET_PORN_LIST = 'SET_PORN_LIST'
 export const T_SET_EVENT_LIST = 'SET_EVENT_LIST'
 export const T_SET_HYPNO_MODE = 'SET_HYPNO_MODE'
@@ -42,6 +43,11 @@ class SettingsActionsBase {
   SetGameDuration = (duration: number) => ({
     type: T_SET_DURATION as typeof T_SET_DURATION,
     payload: duration,
+  })
+
+  SetCredentials = (credentials: Credentials | null) => ({
+    type: T_SET_CREDENTIALS as typeof T_SET_CREDENTIALS,
+    payload: credentials,
   })
 
   SetPornList = (pornList: PornList) => ({
