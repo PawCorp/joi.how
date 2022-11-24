@@ -17,16 +17,34 @@ const VIBRATION_STYLE_MODES = [
   { mode: VibrationStyleMode.THUMP, name: 'Thump', description: 'Vibration thumps with the stroke pace.' },
 ]
 
-const Wrapper = (props: PropsWithChildren<{}>) => (
-  <fieldset className="settings-group">
-    <legend>Vibrator</legend>
-    <div className="settings-row">
-      <strong>Connect any compatible device to your game.</strong>
-      <em>This requires a browser that supports WebBluetooth. Use Chrome.</em>
-      {props.children}
-    </div>
-  </fieldset>
-)
+const Wrapper = (props: PropsWithChildren<{}>) => {
+  if (navigator.bluetooth === undefined) {
+    return (
+      <fieldset className="settings-group">
+        <legend>Vibrator</legend>
+        <div className="settings-row">
+          <strong>WebBluetooth not detected</strong>
+          <em>
+            This requires a browser that supports the Web Bluetooth API, please see the
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API#browser_compatibility">compatability page</a>
+            to find a supported browser.
+          </em>
+        </div>
+      </fieldset>
+    )
+  } else {
+    return (
+      <fieldset className="settings-group">
+        <legend>Vibrator</legend>
+        <div className="settings-row">
+          <strong>Connect any compatible device to your game.</strong>
+          <em>This requires a browser that supports WebBluetooth. Use Chrome.</em>
+          {props.children}
+        </div>
+      </fieldset>
+    )
+  }
+}
 
 export function VibratorSetting(props: ILovenseSettingProps) {
   if (props.vibrator) {
