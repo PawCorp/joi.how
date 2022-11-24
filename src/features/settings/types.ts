@@ -3,6 +3,12 @@ import { ThunkDispatch } from 'redux-thunk'
 import { IState } from '../../store'
 import { SettingsVibratorAction } from './store/actions.vibrator'
 
+declare global {
+  interface Navigator {
+    bluetooth?: any
+  }
+}
+
 export interface PropsForConnectedComponent {
   dispatch: ThunkDispatch<IState, unknown, ReturnType<SettingsAction | SettingsVibratorAction>>
 }
