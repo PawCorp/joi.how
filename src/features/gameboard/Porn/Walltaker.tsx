@@ -1,14 +1,14 @@
-import React, {useEffect, useState} from 'react'
-import {IState} from '../../../store'
-import axios, {AxiosResponse} from 'axios'
-import {SettingsActions} from '../../settings/store'
-import {GameBoardActions} from "../store";
-import {MessageType} from "../MessageArea/MessageTypes";
+import axios, { type AxiosResponse } from 'axios'
+import { useEffect, useState, type FunctionComponent } from 'react'
+import { type IState } from '../../../store'
+import { SettingsActions } from '../../settings/store'
+import { MessageType } from '../MessageArea/MessageTypes'
+import { GameBoardActions } from '../store'
 
 interface IWalltakerProps {
-  walltakerLink: IState['settings']['walltakerLink']
-  pornList: IState['settings']['pornList'],
-  dispatch: (action: any) => void
+  walltakerLink: IState['settings']['walltaker']
+  pornList: IState['settings']['porn']
+  dispatch: (action: unknown) => void
 }
 
 interface IWalltakerLink {
@@ -26,29 +26,32 @@ interface IWalltakerLink {
   url: string
 }
 
-const PING_EVERY = 8000;
+const PING_EVERY = 8000
 
-export function Walltaker(props: IWalltakerProps) {
-  const [intervalId, setIntervalId] = useState<number | null>(null)
+export const Walltaker: FunctionComponent<IWalltakerProps> = (props) => {
+  const { walltakerLink, pornList, dispatch } = props
+  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null)
   useEffect(() => {
-    if (intervalId !== null) clearInterval(intervalId)
-    if (props.walltakerLink) {
+    if (intervalId != null) clearInterval(intervalId)
+    if (walltakerLink != null) {
       setIntervalId(
         setInterval(() => {
-          axios
-            .get(`https://walltaker.joi.how/links/${props.walltakerLink}.json`, {
+          void axios
+            .get(`https://walltaker.joi.how/links/${walltakerLink}.json`, {
               responseType: 'json',
               headers: {
-                'joihow': 'joihow/web'
-              }
+                joihow: 'joihow/web',
+              },
             })
             .then((response: AxiosResponse<IWalltakerLink>) => {
-              if (response.data.post_url && !props.pornList.includes(response.data.post_url)) {
-                props.dispatch(SettingsActions.SetPornList([...props.pornList, response.data.post_url]))
-                props.dispatch(GameBoardActions.ShowMessage({
-                  type: MessageType.EventDescription,
-                  text: `${response.data.set_by ?? 'anon'} added a new image.`
-                }))
+              if (response.data.post_url != null && !pornList.includes(response.data.post_url)) {
+                dispatch(SettingsActions.SetPornList([...pornList, response.data.post_url]))
+                dispatch(
+                  GameBoardActions.ShowMessage({
+                    type: MessageType.EventDescription,
+                    text: `${response.data.set_by ?? 'anon'} added a new image.`,
+                  }),
+                )
               }
             })
         }, PING_EVERY),
@@ -56,9 +59,9 @@ export function Walltaker(props: IWalltakerProps) {
     }
 
     return () => {
-      if (intervalId !== null) clearInterval(intervalId)
+      if (intervalId != null) clearInterval(intervalId)
     }
-  }, [props.walltakerLink, props.pornList.join('')])
+  }, [intervalId, walltakerLink, pornList, dispatch])
 
   return <></>
 }

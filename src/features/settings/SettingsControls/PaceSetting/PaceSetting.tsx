@@ -1,7 +1,7 @@
-import React from 'react'
-import '../settings.css'
+import { type FunctionComponent } from 'react'
 import { Sparklines, SparklinesLine } from 'react-sparklines'
 import { intensityToPaceBounds } from '../../../../helpers/intensity'
+import '../settings.css'
 import { useGA } from '../useGA'
 
 interface IPaceSettingProps {
@@ -13,7 +13,7 @@ interface IPaceSettingProps {
   setSteepness: (newSteepness: number) => void
 }
 
-function floatToString(paceString: string) {
+function floatToString(paceString: string): number {
   try {
     return parseFloat(paceString)
   } catch (e) {
@@ -21,21 +21,21 @@ function floatToString(paceString: string) {
   }
 }
 
-function getSparklineSetForSteepness(steepness: IPaceSettingProps['steepness']) {
+function getSparklineSetForSteepness(steepness: IPaceSettingProps['steepness']): number[] {
   return Array.from(new Array(20))
     .map((_, index, array) => (index / array.length) * 100)
-    .map(intensity => {
+    .map((intensity) => {
       return intensityToPaceBounds(intensity, steepness, {
         max: 10,
         min: 0,
       })
     })
-    .map(paceBounds => {
+    .map((paceBounds) => {
       return paceBounds.max - 1.5
     })
 }
 
-export function PaceSetting(props: IPaceSettingProps) {
+export const PaceSetting: FunctionComponent<IPaceSettingProps> = (props) => {
   useGA('Pace', props, ['max', 'min', 'steepness'])
 
   return (
@@ -52,7 +52,9 @@ export function PaceSetting(props: IPaceSettingProps) {
               max="10"
               step="0.05"
               value={props.max}
-              onChange={e => props.setMax(floatToString(e.target.value))}
+              onChange={(e) => {
+                props.setMax(floatToString(e.target.value))
+              }}
             />
           </label>
           <span>
@@ -68,7 +70,9 @@ export function PaceSetting(props: IPaceSettingProps) {
               max="10"
               step="0.05"
               value={props.min}
-              onChange={e => props.setMin(floatToString(e.target.value))}
+              onChange={(e) => {
+                props.setMin(floatToString(e.target.value))
+              }}
             />
           </label>
           <span>
@@ -87,7 +91,9 @@ export function PaceSetting(props: IPaceSettingProps) {
               max="0.1"
               step="0.005"
               value={props.steepness}
-              onChange={e => props.setSteepness(floatToString(e.target.value))}
+              onChange={(e) => {
+                props.setSteepness(floatToString(e.target.value))
+              }}
             />
           </label>
           <span>

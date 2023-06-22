@@ -1,7 +1,7 @@
-import { PlayerGender, PlayerParts, HypnoMode } from '../features/gameboard/types'
-import { ISettingsState } from '../features/settings/store'
+import { HypnoMode, PlayerGender, PlayerParts } from '../features/gameboard/types'
+import { type ISettingsState } from '../features/settings/store'
 
-export function formatMessage(msg: string, settings: ISettingsState) {
+export function formatMessage(msg: string, settings: ISettingsState): string {
   return msg
     .replace('$player', transform('player', settings))
     .replace('$Player', transform('Player', settings))
@@ -14,7 +14,7 @@ export function formatMessage(msg: string, settings: ISettingsState) {
     .replace('$stroke', transform('stroke', settings))
 }
 
-function transform(token: string, settings: ISettingsState) {
+function transform(token: string, settings: ISettingsState): string {
   switch (token) {
     case 'player':
       switch (settings.player.gender) {
@@ -28,7 +28,7 @@ function transform(token: string, settings: ISettingsState) {
           return 'pup'
       }
     case 'master':
-      switch (settings.hypnoMode) {
+      switch (settings.hypno) {
         case HypnoMode.FemDomPet:
         case HypnoMode.Pet:
           return 'master'
@@ -36,13 +36,13 @@ function transform(token: string, settings: ISettingsState) {
           return ''
       }
     case 'HANDS':
-      if (settings.hypnoMode === (HypnoMode.FemDomPet || HypnoMode.Pet)) {
+      if (settings.hypno === HypnoMode.FemDomPet || settings.hypno === HypnoMode.Pet) {
         return 'PAWS'
       } else {
         return 'HANDS'
       }
     case 'hands':
-      if (settings.hypnoMode === (HypnoMode.FemDomPet || HypnoMode.Pet)) {
+      if (settings.hypno === HypnoMode.FemDomPet || settings.hypno === HypnoMode.Pet) {
         return 'paws'
       } else {
         return 'hands'

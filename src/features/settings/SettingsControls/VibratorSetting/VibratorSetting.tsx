@@ -1,10 +1,11 @@
-import React, { PropsWithChildren } from 'react'
-import '../settings.css'
+import { type FunctionComponent, type PropsWithChildren } from 'react'
+import { type Vibrator } from '../../../../services/vibrator'
 import { VibrationStyleMode } from '../../store'
-import { Vibrator } from '../../../../services/vibrator'
+import '../settings.css'
 
-interface ILovenseSettingProps {
-  vibrator: Vibrator | null
+interface IVibratorSettingProps {
+  connection: string | null
+  vibrators: Vibrator[]
   mode: VibrationStyleMode
   setMode: (newMode: VibrationStyleMode) => void
   onConnect: () => void
@@ -17,33 +18,54 @@ const VIBRATION_STYLE_MODES = [
   { mode: VibrationStyleMode.THUMP, name: 'Thump', description: 'Vibration thumps with the stroke pace.' },
 ]
 
-const Wrapper = (props: PropsWithChildren<{}>) => (
+const Wrapper: FunctionComponent<PropsWithChildren> = (props) => (
   <fieldset className="settings-group">
     <legend>Vibrator</legend>
     <div className="settings-row">
       <strong>Connect any compatible device to your game.</strong>
-      <em>This requires a browser that supports WebBluetooth. Use Chrome.</em>
+      <em>
+        This requires you to install{' '}
+        <a href="https://intiface.com/central/" target={'_blank'} rel="noreferrer">
+          intiface central
+        </a>
+        .
+      </em>
       {props.children}
     </div>
   </fieldset>
 )
 
-export function VibratorSetting(props: ILovenseSettingProps) {
-  if (props.vibrator) {
+export const VibratorSetting: FunctionComponent<IVibratorSettingProps> = (props) => {
+  if (props.connection != null) {
     return (
       <Wrapper>
         <div className="settings-innerrow">
           <button onClick={props.onDisconnect}>Disconnect</button>
         </div>
         <div className="settings-innerrow">
-          <em>Connected to {props.vibrator.name}</em>
-          {VIBRATION_STYLE_MODES.map(modeType => (
+          <em>Connected to {props.connection}</em>
+          {props.vibrators.length > 0 ? (
+            <>
+              Using these devices:
+              <ul>
+                {props.vibrators.map((e) => (
+                  <li key={e.name}>{e.name}</li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <em>Waiting for devices...</em>
+          )}
+          {VIBRATION_STYLE_MODES.map((modeType) => (
             <button
               className={`settings-option${props.mode === modeType.mode ? '--enabled' : '--disabled'}`}
-              onClick={() => props.setMode(modeType.mode)}
+              onClick={() => {
+                props.setMode(modeType.mode)
+              }}
               role="radio"
               aria-checked={props.mode === modeType.mode}
-              key={modeType.mode}>
+              key={modeType.mode}
+            >
               <strong>{modeType.name}</strong>
               <span>{modeType.description}</span>
             </button>
@@ -57,6 +79,11 @@ export function VibratorSetting(props: ILovenseSettingProps) {
     <Wrapper>
       <div className="settings-innerrow">
         <button onClick={props.onConnect}>Connect</button>
+        {props.error != null ? (
+          <div className="settings-row">
+            <em>Failed to connect! Is your intiface server running?</em>
+          </div>
+        ) : null}
       </div>
     </Wrapper>
   )

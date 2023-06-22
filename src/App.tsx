@@ -1,26 +1,17 @@
-import React, { useEffect } from 'react'
+import { useEffect, type FunctionComponent, type PropsWithChildren } from 'react'
+import { useDispatch } from 'react-redux'
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import reactGA from './analytics'
+import { loadSettings } from './helpers/saveFormat'
 import { GreeterPage } from './pages/Greeter/Greeter'
 import { PlayPage } from './pages/Play'
-import { Router, LocationProvider, createHistory } from '@reach/router'
-import { connect } from 'react-redux'
-import { PropsForConnectedComponent } from './features/settings/types'
-import { applyAllSettings, unpackSave } from './helpers/saveFormat'
-import reactGA from './analytics'
 
-interface IAppProps extends PropsForConnectedComponent {}
+export const App: FunctionComponent = () => {
+  const dispatch = useDispatch()
 
-const history = createHistory(window as any)
-history.listen(event => {
-  if (localStorage.getItem('allowCookies') === 'true' || localStorage.getItem('allowCookies') === null) {
-    reactGA.pageview(event.location.pathname)
-  }
-})
-
-function App(props: IAppProps) {
   useEffect(() => {
-    const lastSession = localStorage.getItem('lastSession')
     try {
-      if (lastSession) applyAllSettings(props.dispatch, unpackSave(lastSession))
+      loadSettings(dispatch)
     } catch (e) {
       console.warn(e)
     }
@@ -28,17 +19,24 @@ function App(props: IAppProps) {
 
   return (
     <div className="App">
-      <LocationProvider history={history}>
-        <Router>
-          <GreeterPage path="/" />
-          <PlayPage path="/play" />
-        </Router>
-      </LocationProvider>
+      <BrowserRouter>
+        <Tracker />
+        <Routes>
+          <Route path="/" element={<GreeterPage />} />
+          <Route path="/play" element={<PlayPage />} />
+        </Routes>
+      </BrowserRouter>
     </div>
   )
 }
 
-export default connect(
-  null,
-  dispatch => ({ dispatch }),
-)(App)
+const Tracker: FunctionComponent<PropsWithChildren> = ({ children }) => {
+  const location = useLocation()
+  useEffect(() => {
+    if (localStorage.getItem('allowCookies') === 'true' || localStorage.getItem('allowCookies') === null) {
+      reactGA.pageview(location.pathname)
+    }
+  }, [location])
+
+  return <>{children}</>
+}

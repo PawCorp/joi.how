@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useMemo, useRef, useState, type FunctionComponent } from 'react'
 import { useSelector } from 'react-redux'
-import { HypnoMode } from '../types'
-import { formatMessage } from '../../../helpers/parseString'
 import styled from 'styled-components'
+import { formatMessage } from '../../../helpers/parseString'
+import { HypnoMode } from '../types'
 
+import { type IState } from '../../../store'
+import { useGameLoop } from '../store/hooks'
 import './Hypno.css'
-import { IState } from '../../../store'
 
 interface IHypnoProps {
   mode: HypnoMode
@@ -121,39 +122,32 @@ HYPNO_PHRASES.set(HypnoMode.FemDomPet, [
   "mistress' cum",
 ])
 
-export function Hypno(props: IHypnoProps) {
-  const [phrase, setPhrase] = useState((HYPNO_PHRASES.get(props.mode) || [''])[0])
+export const Hypno: FunctionComponent<IHypnoProps> = (props) => {
+  const [phrase, setPhrase] = useState((HYPNO_PHRASES.get(props.mode) ?? [''])[0])
   const [animating, setAnimating] = useState(false)
-  const intensity = useSelector<IState, IState['game']['intensity']>(state => state.game.intensity)
-  const settings = useSelector<IState, IState['settings']>(state => state.settings)
+  const intensity = useSelector<IState, IState['game']['intensity']>((state) => state.game.intensity)
+  const settings = useSelector<IState, IState['settings']>((state) => state.settings)
+  const cycling = useRef(false)
 
   const delay = useMemo(() => {
-    // intensity ranges between 0 and 100, lowest delay time is thus 10ms
+    // intensity ranges between 0 and 100, lowest delay time is thus 100ms
     return 3000 - intensity * 29
   }, [intensity])
 
-  useEffect(() => {
-    const phraseTimer = setTimeout(() => {
+  useGameLoop(() => {
+    if (cycling.current) {
       const phrases = HYPNO_PHRASES.get(props.mode)
-      if (phrases) {
+      if (phrases != null) {
         let newPhrase = phrase
         while (newPhrase === phrase) {
           newPhrase = phrases[Math.ceil(Math.random() * (phrases.length - 1))]
         }
         setPhrase(newPhrase)
-        setAnimating(true)
       }
-    }, delay)
-
-    const animationTimer = setTimeout(() => {
-      setAnimating(false)
-    }, delay / 2)
-
-    return () => {
-      clearTimeout(phraseTimer)
-      clearTimeout(animationTimer)
     }
-  }, [phrase, props.mode, delay])
+    cycling.current = !cycling.current
+    setAnimating(!animating)
+  }, delay / 2)
 
   return (
     <HypnoTextDiv delay={delay} className={animating ? 'Hypno--changed' : 'Hypno'}>

@@ -1,131 +1,81 @@
-import React from 'react'
-import { connect } from 'react-redux'
-import StrokeMeter from './StrokeMeter/StrokeMeter'
-import { EStroke, PropsForConnectedComponent } from './types'
-import { IState } from '../../store'
-import { GameBoardActions } from './store'
-import { MessageArea } from './MessageArea/MessageArea'
+import { useEffect, type FunctionComponent } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { type IState } from '../../store'
 import { EmergencyStop } from './EmergencyStop/EmergencyStop'
-import { Stats } from './Stats/Stats'
-import { getNextEvent } from './events'
+import { MessageArea } from './MessageArea/MessageArea'
 import { Porn } from './Porn/Porn'
-import { playTone } from './sound'
+import { Stats } from './Stats/Stats'
+import { GameBoardActions } from './store'
+import { StrokeMeter } from './StrokeMeter/StrokeMeter'
 
+import { type AnyAction, type ThunkDispatch } from '@reduxjs/toolkit'
+import { VibrationStyleMode } from '../settings/store'
 import './GameBoard.css'
 import { Hypno } from './Hypno/Hypno'
-import { randomPace } from './events/event-definitions/pace/randomPace'
-import { VibrationStyleMode } from '../settings/store'
+import { playTone } from './sound'
+import { getNextEvent } from './store/actions.events'
+import { useGameLoop } from './store/hooks'
+import { EStroke } from './types'
 
-interface IGameBoardProps extends PropsForConnectedComponent {
-  state: IState
-}
+export const GameBoard: FunctionComponent = () => {
+  const state = useSelector((state: IState) => state)
 
-interface IGameBoardState {
-  timers: number[]
-}
+  const stroke = useSelector<IState, IState['game']['stroke']>((state) => state.game.stroke)
+  const pace = useSelector<IState, IState['game']['pace']>((state) => state.game.pace)
+  const cumming = useSelector<IState, IState['game']['cumming']>((state) => state.game.cumming)
+  const intensity = useSelector<IState, IState['game']['intensity']>((state) => state.game.intensity)
+  const vibrators = useSelector<IState, IState['vibrators']>((state) => state.vibrators)
+  const hypno = useSelector<IState, IState['settings']['hypno']>((state) => state.settings.hypno)
+  const duration = useSelector<IState, IState['settings']['duration']>((state) => state.settings.duration)
 
-export const GameBoard = connect(
-  (state: IState) =>
-    ({
-      state: state,
-    } as IGameBoardProps),
-)(
-  class extends React.Component<IGameBoardProps, IGameBoardState> {
-    constructor(props: IGameBoardProps) {
-      super(props)
-      this.state = { timers: [] }
+  const dispatch: ThunkDispatch<IState, unknown, AnyAction> = useDispatch()
+
+  useEffect(() => {
+    void dispatch(GameBoardActions.StartGame())
+
+    return () => {
+      void dispatch(GameBoardActions.StopGame())
     }
+  }, [dispatch])
 
-    render() {
-      return (
-        <div className="GameBoard">
-          <Stats />
-          <StrokeMeter stroke={this.props.state.game.stroke} pace={this.props.state.game.pace} cumming={this.props.state.game.cumming} />
-          <Hypno mode={this.props.state.settings.hypnoMode} />
-          <MessageArea />
-          <EmergencyStop />
-          <Porn />
-        </div>
-      )
-    }
-
-    componentDidMount() {
-      this.start()
-      randomPace(undefined)(this.props.state, this.props.dispatch)
-    }
-
-    setNextStroke() {
-      if (window.location.pathname !== '/play') return
-      const strokeTimer = setTimeout(() => {
-        this.props.dispatch(GameBoardActions.Pulse())
-        if (this.props.state.game.stroke === EStroke.down) playTone(425)
-        if (this.props.state.game.stroke === EStroke.up) {
-          playTone(625)
-          if (this.props.state.vibrator.vibrator && this.props.state.vibrator.mode === VibrationStyleMode.THUMP) {
-            if (this.props.state.game.pace > 3.25) this.props.state.vibrator.vibrator.setVibration(this.props.state.game.intensity / 100)
-            else
-              this.props.state.vibrator.vibrator.thump(
-                ((1 / this.props.state.game.pace) * 1000) / 2,
-                Math.max(0.25, this.props.state.game.intensity / 100),
-              )
-          }
-        }
-        if (!this.props.state.game.gamePaused) this.setNextStroke()
-        else this.setUnpauseTimer()
-        this.setState({ timers: this.state.timers.filter(timer => timer !== strokeTimer) })
-      }, (1 / this.props.state.game.pace) * 1000)
-
-      this.setState({ timers: this.state.timers.concat([strokeTimer]) })
-    }
-
-    setNextEvent() {
-      if (window.location.pathname !== '/play') return
-      const eventTimer = setTimeout(() => {
-        const next = getNextEvent(this.props.state)
-        let nextReturn
-        if (next) {
-          nextReturn = next(this.props.state, this.props.dispatch)
-        }
-        if (nextReturn) {
-          nextReturn.then(() => {
-            if (!this.props.state.game.gamePaused) this.setNextEvent()
+  useGameLoop(() => {
+    dispatch(GameBoardActions.Pulse())
+    if (stroke === EStroke.down) playTone(425)
+    if (stroke === EStroke.up) {
+      playTone(625)
+      if (vibrators.devices.length > 0) {
+        if (vibrators.mode === VibrationStyleMode.THUMP && pace <= 3) {
+          vibrators.devices.forEach((e) => {
+            void e.thump(((1 / pace) * 1000) / 2, Math.max(0.25, intensity / 100))
           })
         } else {
-          if (!this.props.state.game.gamePaused) this.setNextEvent()
+          vibrators.devices.forEach((e) => {
+            void e.setVibration(intensity / 100)
+          })
         }
-        this.setState({ timers: this.state.timers.filter(timer => timer !== eventTimer) })
-      }, 1000)
-
-      this.setState({ timers: this.state.timers.concat([eventTimer]) })
+      }
     }
+  }, (1 / pace) * 1000)
 
-    setIntensityTick() {
-      if (window.location.pathname !== '/play') return
-      const intensityTimer = setTimeout(() => {
-        this.props.dispatch(GameBoardActions.IncIntensity(1))
-        if (!this.props.state.game.gamePaused) this.setIntensityTick()
-        this.setState({ timers: this.state.timers.filter(timer => timer !== intensityTimer) })
-      }, this.props.state.settings.duration)
-
-      this.setState({ timers: this.state.timers.concat([intensityTimer]) })
+  useGameLoop(async () => {
+    const next = getNextEvent(state)
+    if (next != null) {
+      await dispatch(next)
     }
+  }, 1000)
 
-    start() {
-      this.setNextStroke()
-      this.setNextEvent()
-      this.setIntensityTick()
-    }
+  useGameLoop(() => {
+    dispatch(GameBoardActions.IncIntensity(1))
+  }, duration)
 
-    setUnpauseTimer() {
-      this.state.timers.forEach(timer => clearTimeout(timer))
-      this.setState({
-        timers: [
-          setTimeout(() => {
-            if (!this.props.state.game.gamePaused) this.start()
-            else this.setUnpauseTimer()
-          }, 1000),
-        ],
-      })
-    }
-  },
-)
+  return (
+    <div className="GameBoard">
+      <Stats />
+      <StrokeMeter stroke={stroke} pace={pace} cumming={cumming} />
+      <Hypno mode={hypno} />
+      <MessageArea />
+      <EmergencyStop />
+      <Porn />
+    </div>
+  )
+}

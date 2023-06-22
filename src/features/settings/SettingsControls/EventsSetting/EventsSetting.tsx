@@ -1,29 +1,29 @@
-import React, { SFC } from 'react'
+import { type FunctionComponent } from 'react'
+import { events } from '../../../gameboard'
+import { type EventToken } from '../../../gameboard/types'
 import '../settings.css'
-import { events } from '../../../gameboard/events/index'
-import { EventToken } from '../../../gameboard/types'
 import { useGA } from '../useGA'
 
 interface IEventsSettingProps {
-  eventList: EventToken['id'][]
-  setEventList: (newEvents: EventToken['id'][]) => void
+  eventList: Array<EventToken['id']>
+  setEventList: (newEvents: Array<EventToken['id']>) => void
 }
 
-function toggle(props: IEventsSettingProps, eventToken: EventToken) {
+function toggle(props: IEventsSettingProps, eventToken: EventToken): void {
   const currentlyEnabled = isEnabled(props, eventToken)
 
   if (currentlyEnabled) {
-    props.setEventList(props.eventList.filter(eventTokenId => eventTokenId !== eventToken.id))
+    props.setEventList(props.eventList.filter((eventTokenId) => eventTokenId !== eventToken.id))
   } else {
     props.setEventList(props.eventList.concat([eventToken.id]))
   }
 }
 
-const isEnabled = (props: IEventsSettingProps, eventToken: EventToken) => {
-  return !!props.eventList.find(eventTokenId => eventTokenId === eventToken.id)
+const isEnabled = (props: IEventsSettingProps, eventToken: EventToken): boolean => {
+  return props.eventList.find((eventTokenId) => eventTokenId === eventToken.id) != null
 }
 
-export const EventsSetting: SFC<IEventsSettingProps> = props => {
+export const EventsSetting: FunctionComponent<IEventsSettingProps> = (props) => {
   useGA('Events', props, ['eventList'])
 
   return (
@@ -31,13 +31,16 @@ export const EventsSetting: SFC<IEventsSettingProps> = props => {
       <legend>Events</legend>
       <div className="settings-row">
         <strong>Click to enable/disable occurance of each event.</strong>
-        {events.map(event => (
+        {events.map((event) => (
           <button
             className={`settings-option${isEnabled(props, event) ? '--enabled' : '--disabled'}`}
-            onClick={() => toggle(props, event)}
+            onClick={() => {
+              toggle(props, event)
+            }}
             role="switch"
             aria-checked={isEnabled(props, event)}
-            key={event.id}>
+            key={event.id}
+          >
             <strong>{event.name}</strong>
             <span>{event.description}</span>
           </button>

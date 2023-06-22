@@ -1,10 +1,9 @@
-import React from 'react'
+import { type FunctionComponent } from 'react'
 import { GameBoard } from '../features/gameboard'
-import { SettingsEntryPoint } from '../features/settings/SettingsEntryPoint/SettingsEntryPoint'
 import { SettingsDialog } from '../features/settings/SettingsDialog/SettingsDialog'
-import { RouteComponentProps } from '@reach/router'
+import { SettingsEntryPoint } from '../features/settings/SettingsEntryPoint/SettingsEntryPoint'
 
-export function PlayPage(props: RouteComponentProps) {
+export const PlayPage: FunctionComponent = () => {
   return (
     <>
       <SettingsDialog />

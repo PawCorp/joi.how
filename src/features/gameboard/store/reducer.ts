@@ -1,110 +1,91 @@
-import {
-  GameBoardAction,
-  T_SET_PACE,
-  T_SHOW_MESSAGE,
-  T_PULSE,
-  T_SET_GRIP,
-  T_PAUSE_EVENTS,
-  T_RESUME_EVENTS,
-  T_INC_INTENSITY,
-  T_DEC_INTENSITY,
-  T_CUM,
-  T_PAUSE_GAME,
-  T_RESUME_GAME,
-} from './actions'
-import { EStroke, EGrip } from '../types'
-import { Message, applyMessage } from '../MessageArea/MessageTypes'
-import { round } from '../../../helpers/round'
-import { T_SET_VIBRATION } from './actions'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import { applyMessage, type Message } from '../MessageArea/MessageTypes'
+import { EGrip, EStroke } from '../types'
 
 export interface IGameBoardState {
   pace: number
   grip: EGrip
   intensity: number
   messages: Message[]
+  timers: NodeJS.Timeout[]
   stroke: EStroke
   eventsPaused: boolean
   gamePaused: boolean
-  cumming: boolean
   vibration: number
+  cumming: boolean
+  hasEdged: boolean
+  currentImage: number
 }
 
-export const GameBoardDefaultState: IGameBoardState = {
-  pace: 1,
-  grip: EGrip.right,
-  intensity: 0,
-  messages: [],
-  stroke: EStroke.down,
-  eventsPaused: false,
-  gamePaused: false,
-  cumming: false,
-  vibration: 0,
-}
-
-export function GameBoardReducer(state: IGameBoardState = GameBoardDefaultState, action: ReturnType<GameBoardAction>): IGameBoardState {
-  if (typeof action !== 'object') return state
-  switch (action.type) {
-    case T_SET_PACE:
-      return {
-        ...state,
-        pace: round(action.payload),
-      }
-    case T_SET_GRIP:
-      return {
-        ...state,
-        grip: action.payload,
-      }
-    case T_SHOW_MESSAGE:
-      return {
-        ...state,
-        messages: applyMessage(state.messages, action.payload),
-      }
-    case T_PULSE:
-      return {
-        ...state,
-        stroke: state.stroke === EStroke.down ? EStroke.up : EStroke.down,
-      }
-    case T_PAUSE_EVENTS:
-      return {
-        ...state,
-        eventsPaused: true,
-      }
-    case T_RESUME_EVENTS:
-      return {
-        ...state,
-        eventsPaused: false,
-      }
-    case T_PAUSE_GAME:
-      return {
-        ...state,
-        gamePaused: true,
-      }
-    case T_RESUME_GAME:
-      return {
-        ...state,
-        gamePaused: false,
-      }
-    case T_INC_INTENSITY:
-      return {
-        ...state,
-        intensity: Math.min(state.intensity + action.payload, 100),
-      }
-    case T_DEC_INTENSITY:
-      return {
-        ...state,
-        intensity: Math.max(state.intensity - action.payload, 0),
-      }
-    case T_CUM:
-      return {
-        ...state,
-        cumming: true,
-      }
-    case T_SET_VIBRATION:
-      return {
-        ...state,
-        vibration: action.payload,
-      }
-    default:
-      return state
-  }
-}
+export const gameBoardSlice = createSlice({
+  name: 'gameboard',
+  initialState: {
+    pace: 1,
+    grip: EGrip.right,
+    intensity: 0,
+    messages: [],
+    timers: [],
+    stroke: EStroke.down,
+    gamePaused: true,
+    eventsPaused: false,
+    cumming: false,
+    vibration: 0,
+    hasEdged: false,
+    currentImage: 0,
+  } as IGameBoardState,
+  reducers: {
+    SetPace: (state, action: PayloadAction<number>) => {
+      state.pace = action.payload
+    },
+    IncIntensity: (state, action: PayloadAction<number>) => {
+      state.intensity = Math.min(state.intensity + action.payload, 100)
+    },
+    DecIntensity: (state, action: PayloadAction<number>) => {
+      state.intensity = Math.max(state.intensity - action.payload, 0)
+    },
+    SetGrip: (state, action: PayloadAction<EGrip>) => {
+      state.grip = action.payload
+    },
+    ShowMessage: (state, action: PayloadAction<Message>) => {
+      state.messages = applyMessage(state.messages, action.payload)
+    },
+    Pulse: (state) => {
+      state.stroke = state.stroke === EStroke.down ? EStroke.up : EStroke.down
+    },
+    StopEvents: (state) => {
+      state.eventsPaused = true
+    },
+    StartEvents: (state) => {
+      state.eventsPaused = false
+    },
+    StopGame: (state) => {
+      state.gamePaused = true
+    },
+    StartGame: (state) => {
+      state.gamePaused = false
+    },
+    AddTimer: (state, action: PayloadAction<NodeJS.Timeout>) => {
+      state.timers = state.timers.concat([action.payload])
+    },
+    RemoveTimer: (state, action: PayloadAction<NodeJS.Timeout>) => {
+      clearTimeout(action.payload)
+      state.timers = state.timers.filter((e) => e !== action.payload)
+    },
+    ClearTimers: (state) => {
+      state.timers.forEach((timer) => clearTimeout(timer))
+      state.timers = []
+    },
+    SetVibration: (state, action: PayloadAction<number>) => {
+      state.vibration = action.payload
+    },
+    SetImage: (state, action: PayloadAction<number>) => {
+      state.currentImage = action.payload
+    },
+    Edge: (state) => {
+      state.hasEdged = true
+    },
+    Cum: (state) => {
+      state.cumming = true
+    },
+  },
+})

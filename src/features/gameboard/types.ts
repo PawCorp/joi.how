@@ -1,7 +1,4 @@
-import { GameBoardAction } from './store'
-import { IState } from '../../store'
-
-export type ArrayElement<A> = A extends readonly (infer T)[] ? T : never
+export type ArrayElement<A> = A extends ReadonlyArray<infer T> ? T : never
 
 export enum EStroke {
   up,
@@ -15,15 +12,12 @@ export enum EGrip {
   none,
 }
 
-export type PornList = string[]
-
-export type GameEvent<Args extends any[] = []> = (
-  ...args: Args
-) => (state: IState, dispatch: (action: ReturnType<GameBoardAction>) => void) => void | Promise<any>
-
-export interface PropsForConnectedComponent {
-  dispatch: (action: ReturnType<GameBoardAction>) => void
+export interface Credentials {
+  username: string
+  password: string
 }
+
+export type PornList = string[]
 
 export interface EventToken {
   id: string

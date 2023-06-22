@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import { marked } from 'marked'
 import raw from 'raw.macro'
+import { useState, type FunctionComponent } from 'react'
 import './ReleaseNotes.css'
-import { parse } from 'marked'
 
 const releaseNotes = raw('../../../release-notes.md')
 
-export function ReleaseNotes() {
+export const ReleaseNotes: FunctionComponent = () => {
   const [open, setOpen] = useState(false)
 
   return (
@@ -15,7 +15,10 @@ export function ReleaseNotes() {
         aria-label="Toggle release note information below."
         aria-controls="ReleaseNotes__content"
         aria-expanded={open}
-        onClick={() => setOpen(!open)}>
+        onClick={() => {
+          setOpen(!open)
+        }}
+      >
         Release Notes
       </button>
       <div
@@ -23,7 +26,7 @@ export function ReleaseNotes() {
         aria-hidden={!open}
         aria-labelledby="ReleaseNotes__button"
         tabIndex={open ? 0 : -1}
-        dangerouslySetInnerHTML={{ __html: parse(releaseNotes) }}
+        dangerouslySetInnerHTML={{ __html: marked.parse(releaseNotes) }}
       />
     </div>
   )

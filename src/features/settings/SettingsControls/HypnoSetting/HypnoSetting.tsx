@@ -1,6 +1,6 @@
-import React from 'react'
-import '../settings.css'
+import { type FunctionComponent } from 'react'
 import { HypnoMode } from '../../../gameboard/types'
+import '../settings.css'
 import { useGA } from '../useGA'
 
 interface IHypnoSettingProps {
@@ -16,7 +16,7 @@ const HYPNO_MODE_TYPES = [
   { mode: HypnoMode.FemDomPet, name: 'Femdom Pet', description: "Good boys get mistress' treats." },
 ]
 
-export function HypnoSetting(props: IHypnoSettingProps) {
+export const HypnoSetting: FunctionComponent<IHypnoSettingProps> = (props) => {
   useGA('Hypno', props, ['mode'])
 
   return (
@@ -24,13 +24,16 @@ export function HypnoSetting(props: IHypnoSettingProps) {
       <legend>Hypno</legend>
       <div className="settings-row" role="radiogroup">
         <strong>Select to enable a hypno spinner text set.</strong>
-        {HYPNO_MODE_TYPES.map(modeType => (
+        {HYPNO_MODE_TYPES.map((modeType) => (
           <button
             className={`settings-option${props.mode === modeType.mode ? '--enabled' : '--disabled'}`}
-            onClick={() => props.setMode(modeType.mode)}
+            onClick={() => {
+              props.setMode(modeType.mode)
+            }}
             role="radio"
             aria-checked={props.mode === modeType.mode}
-            key={modeType.mode}>
+            key={modeType.mode}
+          >
             <strong>{modeType.name}</strong>
             <span>{modeType.description}</span>
           </button>

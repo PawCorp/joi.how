@@ -22,7 +22,7 @@ interface PromptMessage {
 
 export interface Button {
   display: string
-  method: () => void | Promise<any>
+  method: () => void | Promise<void>
 }
 
 export type Message = NewEventMessage | EventDescriptionMessage | PromptMessage
@@ -37,6 +37,6 @@ export function applyMessage(log: Message[], message: Message): Message[] {
     case MessageType.Prompt:
       return [message]
     case MessageType.EventDescription:
-      return [...log.filter(loggedMessage => loggedMessage.type !== MessageType.EventDescription), message]
+      return [...log.filter((loggedMessage) => loggedMessage.type !== MessageType.EventDescription), message]
   }
 }
